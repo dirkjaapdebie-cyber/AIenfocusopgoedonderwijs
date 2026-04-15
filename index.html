@@ -121,32 +121,27 @@
 
     <div class="step" id="step-7">
         <h2>Stap C1: Het Leerdoel</h2>
-        <label><b>Wat is het overkoepelende leerdoel?</b></label>
         <input type="text" id="les-doel" placeholder="Bijv: redenen van wetenschap in pv">
     </div>
 
     <div class="step" id="step-8">
         <h2>Stap C2: De Leeractiviteit</h2>
-        <label><b>Welke passende leeractiviteit heb je bedacht?</b></label>
-        <textarea id="les-werkvorm" rows="5" placeholder="Beschrijf hoe de lerende actief met de stof aan de slag gaat..."></textarea>
+        <textarea id="les-werkvorm" rows="5" placeholder="Beschrijf de passende leeractiviteit..."></textarea>
     </div>
 
     <div class="step" id="step-9">
         <h2>Stap C3: Wijze van Toetsen (Inzicht)</h2>
-        <p><i>Zorg ervoor dat de toetsing de lerende helpt bij het inzicht in eigen leerproces.</i></p>
-        <label><b>Hoe ga je toetsen?</b></label>
+        <p><i>Helpt de lerende bij inzicht in eigen leerproces.</i></p>
         <select id="toets-vorm">
-            <option value="Formatieve Quiz met feedback op het proces">Formatieve Quiz met feedback op het proces</option>
-            <option value="Self-assessment met verbetersuggesties">Self-assessment met verbetersuggesties</option>
-            <option value="Interactieve reflectie">Interactieve reflectie</option>
+            <option value="Formatieve Quiz">Formatieve Quiz</option>
+            <option value="Self-assessment">Self-assessment</option>
         </select>
-        <textarea id="toets-details" rows="3" placeholder="Hoe krijgt de student specifiek inzicht in wat hij al kan?"></textarea>
+        <textarea id="toets-details" rows="3" placeholder="Details voor inzicht..."></textarea>
     </div>
 
     <div class="step" id="step-10">
         <h2>Stap C4: Wijze van Evalueren</h2>
-        <label><b>Criteria voor de Rubric (Evaluatie):</b></label>
-        <input type="text" id="rubric-criteria" placeholder="Bijv: Inhoud, Structuur, Eigen inzicht">
+        <input type="text" id="rubric-criteria" placeholder="Criteria voor de Rubric">
         <button class="btn btn-success" onclick="saveDesignAndProceed()" style="width: 100%;">Sla op & Genereer Prompt 🚀</button>
     </div>
 
@@ -154,23 +149,6 @@
         <h2>Stap D: De Gemini Prompt Machine</h2>
         <div id="generated-prompt" class="code-box"></div>
         <button class="btn" onclick="copyToClipboard('generated-prompt')">Kopieer Prompt 📋</button>
-    </div>
-
-    <div class="step" id="step-12">
-        <h2>Stap E: Genereer Code met Gemini</h2>
-        <div style="text-align:center;"><a href="https://gemini.google.com/" target="_blank" class="btn">Open Gemini</a></div>
-    </div>
-
-    <div class="step" id="step-13">
-        <h2>Stap F: GitHub Live Link</h2>
-        <input type="text" id="github-url" placeholder="https://jouwnaam.github.io/project/" oninput="updatePreview()">
-        <button class="btn btn-success" onclick="saveGithubLink()" style="width: 100%;">Deel mijn les!</button>
-    </div>
-
-    <div class="step" id="step-16">
-        <h2>Stap G: Afronden</h2>
-        <button class="btn btn-success" onclick="mailAlleSchermen()" style="width: 100%;">Mail resultaten ✉️</button>
-        <button class="btn-danger" onclick="hardResetAlles()" style="width: 100%; margin-top: 50px;">VOLLEDIGE RESET 🔥</button>
     </div>
 
     <div class="navigation">
@@ -193,7 +171,6 @@
         const currentNum = parseInt(currentEl.id.split('-')[1]);
         const nextNum = currentNum + n;
         const nextEl = document.getElementById(`step-${nextNum}`);
-
         if (nextEl) {
             currentEl.classList.remove('active');
             nextEl.classList.add('active');
@@ -203,22 +180,44 @@
         }
     };
 
+    window.addWordToFirebase = () => {
+        const val = document.getElementById('word-input').value;
+        if(val) push(ref(db, 'workshop/whiteboard/words'), { text: val, x: 750, y: 150 });
+        document.getElementById('word-input').value = '';
+    };
+
+    window.plopOogst = () => {
+        const woorden = ["Chunking", "Inbreng in de leeromgeving", "Formatief toetsen", "Snelle feedback", "Sociaal leren", "Snel kennis activeren", "Eigen motivatie oproepen"];
+        woorden.forEach(t => push(ref(db, 'workshop/whiteboard/words'), { text: t, x: 200 + (Math.random()*800), y: 100 + (Math.random()*400) }));
+    };
+
     window.saveDesignAndProceed = () => {
-        const prompt = `Hoi Gemini, ik ben ${document.getElementById('participant-name').value}. 
-        Mijn leerdoel is: ${document.getElementById('les-doel').value}. 
-        De leeractiviteit: ${document.getElementById('les-werkvorm').value}. 
-        Toetsing voor eigen inzicht: ${document.getElementById('toets-vorm').value} met details: ${document.getElementById('toets-details').value}. 
-        Evaluatie criteria: ${document.getElementById('rubric-criteria').value}.
-        Bouw een interactieve website (HTML/JS) die de lerende helpt zijn eigen voortgang te begrijpen.`;
-        
+        const prompt = `Hoi Gemini. Leerdoel: ${document.getElementById('les-doel').value}. Activiteit: ${document.getElementById('les-werkvorm').value}. Toetsing voor inzicht: ${document.getElementById('toets-vorm').value}. Evaluatie: ${document.getElementById('rubric-criteria').value}.`;
         document.getElementById('generated-prompt').innerText = prompt;
         window.changeStep(1);
     };
 
-    // Firebase & whiteboard logica (origineel behouden)
-    window.addWordToFirebase = () => { /* ... */ };
-    window.plopOogst = () => { /* ... */ };
     window.copyToClipboard = (id) => { navigator.clipboard.writeText(document.getElementById(id).innerText); alert("Gekopieerd!"); };
+    window.clearFullReset = () => { if(confirm("Bord leegmaken?")) remove(ref(db, 'workshop/whiteboard/words')); };
+
+    // Sticky notes sync
+    onValue(ref(db, 'workshop/whiteboard/words'), (snapshot) => {
+        const container = document.getElementById('sticky-container');
+        if (!container) return;
+        const data = snapshot.val();
+        container.innerHTML = '';
+        if (data) {
+            Object.entries(data).forEach(([key, v]) => {
+                const div = document.createElement('div');
+                div.className = 'sticky-note';
+                div.style.left = v.x + 'px'; div.style.top = v.y + 'px';
+                div.innerHTML = `<span>${v.text}</span><div class="delete-btn" onclick="deleteSticky('${key}')">✖</div>`;
+                container.appendChild(div);
+            });
+        }
+    });
+
+    window.deleteSticky = (key) => { remove(ref(db, `workshop/whiteboard/words/${key}`)); };
 </script>
 </body>
 </html>
